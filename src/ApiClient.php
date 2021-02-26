@@ -161,6 +161,59 @@ class ApiClient
         });
     }
 
+
+    /**
+     * Gets all channels in the team.
+     *
+     * @return \React\Promise\PromiseInterface
+     */
+    public function getConversations()
+    {
+        return $this->apiCall('conversations.list', ['types' => 'public_channel,private_channel', 'limit' => 1000])->then(function ($response) {
+            $channels = [];
+            foreach ($response['channels'] as $channel) {
+                $channels[] = new Channel($this, $channel);
+            }
+            return $channels;
+        });
+    }
+
+    /**
+     * Gets a channel by its ID.
+     *
+     * @param string $id A channel ID.
+     *
+     * @return \React\Promise\PromiseInterface A promise for a channel object.
+     */
+    public function getConversationById($id)
+    {
+        return $this->apiCall('conversations.info', [
+            'channel' => $id,
+        ])->then(function (Payload $response) {
+            return new Channel($this, $response['channel']);
+        });
+    }
+
+    /**
+     * Gets a channel by its name.
+     *
+     * @param string $name The name of the channel.
+     *
+     * @return \React\Promise\PromiseInterface
+     */
+    public function getConversationByName($name)
+    {
+        return $this->getConversations()->then(function (array $channels) use ($name) {
+            foreach ($channels as $channel) {
+                if ($channel->getName() === $name) {
+                    return $channel;
+                }
+            }
+
+            throw new ApiException('Channel ' . $name . ' not found.');
+        });
+    }
+
     /**
      * Gets all groups the authenticated user is a member of.
      *
